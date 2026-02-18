@@ -1,0 +1,86 @@
+/******************************************************************************
+* FILE: omp_orphan.c
+* DESCRIPTION:
+*   OpenMP Example - Parallel region with an orphaned directive - C/C++ Version
+*   This example demonstrates a dot product  being performed by an orphaned
+*   loop reduction construct.  Scoping of the reduction variable is critical.
+* AUTHOR: Blaise Barney  5/99
+* LAST REVISED: 06/30/05
+******************************************************************************/
+#include <omp.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define VECLEN 100
+
+float a[VECLEN], b[VECLEN], sum;
+
+float dotprod ()
+{
+int i,tid;
+
+tid = omp_get_thread_num();
+#pragma omp for reduction(+:sum)
+  for (i=0; i < VECLEN; i++)
+    {
+    sum = sum + (a[i]*b[i]);
+    printf("  tid= %d i=%d\n",tid,i);
+    }
+}
+
+
+int main (int argc, char *argv[]) {
+int i;
+
+for (i=0; i < VECLEN; i++)
+  a[i] = b[i] = 1.0 * i;
+sum = 0.0;
+
+#pragma omp parallel
+  dotprod();
+
+printf("Sum = %f\n",sum);
+
+}
+
+
+This is an OpenMP example demonstrating orphaned directives — a #pragma omp for directive used outside its immediate parallel region.
+
+Code Structure:
+
+Global Variables:
+
+float a[VECLEN], b[VECLEN], sum;
+
+These are shared by default (global scope).
+
+Function with Orphaned Directive:
+
+float dotprod ()
+{
+  int i,tid;
+  tid = omp_get_thread_num();
+  #pragma omp for reduction(+:sum)
+    for (i=0; i < VECLEN; i++)
+      {
+      sum = sum + (a[i]*b[i]);
+      printf("  tid= %d i=%d\n",tid,i);
+      }
+}
+
+The #pragma omp for is orphaned — it appears in a separate function, NOT directly inside a #pragma omp parallel block.
+
+Main Function:
+#pragma omp parallel
+  dotprod();
+
+The parallel region creates threads, then calls dotprod(). The #pragma omp for inside dotprod() still works because it's within the dynamic scope of the parallel region.
+
+How It Works:
+
+#pragma omp parallel creates multiple threads
+Each thread calls dotprod()
+The #pragma omp for directive inside dotprod() distributes the loop iterations among the threads
+Each thread computes its part: a[i] * b[i]
+reduction(+:sum) combines all private sum values at the end
+Prints which thread (tid) processed which iteration
+Key Point: Even though #pragma omp for is "orphaned" (not directly nested), it still binds to the enclosing parallel region and works correctly. This is useful for modular code where work-sharing directives are in separate functions.
