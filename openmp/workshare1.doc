@@ -1,0 +1,107 @@
+/******************************************************************************
+* FILE: omp_workshare1.c
+* DESCRIPTION:
+*   OpenMP Example - Loop Work-sharing - C/C++ Version
+*   In this example, the iterations of a loop are scheduled dynamically
+*   across the team of threads.  A thread will perform CHUNK iterations
+*   at a time before being scheduled for the next CHUNK of work.
+* AUTHOR: Blaise Barney  5/99
+* LAST REVISED: 04/06/05
+******************************************************************************/
+#include <omp.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define CHUNKSIZE   10
+#define N       100
+
+int main (int argc, char *argv[]) 
+{
+int nthreads, tid, i, chunk;
+float a[N], b[N], c[N];
+
+/* Some initializations */
+for (i=0; i < N; i++)
+  a[i] = b[i] = i * 1.0;
+chunk = CHUNKSIZE;
+
+#pragma omp parallel shared(a,b,c,nthreads,chunk) private(i,tid)
+  {
+  tid = omp_get_thread_num();
+  if (tid == 0)
+    {
+    nthreads = omp_get_num_threads();
+    printf("Number of threads = %d\n", nthreads);
+    }
+  printf("Thread %d starting...\n",tid);
+
+  #pragma omp for schedule(dynamic,chunk)
+  for (i=0; i<N; i++)
+    {
+    c[i] = a[i] + b[i];
+    printf("Thread %d: c[%d]= %f\n",tid,i,c[i]);
+    }
+
+  }  /* end of parallel section */
+
+}
+
+This is an OpenMP example demonstrating loop work-sharing with dynamic scheduling. Here's what it does:
+
+Setup:
+
+Defines arrays a, b, c of size 100
+Initializes arrays a and b with values
+Sets CHUNKSIZE to 10
+
+
+Parallel Region:
+
+Creates a parallel team of threads
+Uses shared(a,b,c,nthreads,chunk) so all threads can access these arrays
+Uses private(i,tid) so each thread has its own copy of loop counter i and thread ID tid
+Work Distribution:
+
+#pragma omp for schedule(dynamic,chunk) divides the loop iterations (0-99) dynamically among threads
+Each thread gets 10 iterations (CHUNKSIZE) at a time before requesting more work
+This allows load balancing—idle threads pick up remaining work
+Computation:
+
+Each iteration computes c[i] = a[i] + b[i] (vector addition)
+Prints which thread performed which iteration
+The key difference from static scheduling is that with dynamic scheduling, threads don't get all their iterations upfront; 
+they request work in chunks, which provides better load balancing when iterations take varying amounts of time.
+
+#pragma omp for is a work-sharing construct that divides loop iterations among threads in a parallel region. Here's a detailed explanation:
+
+Purpose:
+
+Distributes loop iterations across multiple threads for parallel execution
+Ensures each iteration is executed exactly once (no duplication or missing iterations)
+Must be used inside a #pragma omp parallel region
+How it Works:
+
+Takes a for loop and partitions its iterations among active threads
+Each thread executes a subset of the total iterations
+Threads execute their assigned iterations in parallel (not sequentially)
+Schedule Types:
+The schedule clause controls how iterations are distributed:
+
+schedule(static) - Iterations divided into chunks upfront; each thread gets assigned chunks before execution starts. Good for predictable workloads.
+
+schedule(dynamic, chunk) - Threads request work in chunks as they become idle. Thread that finishes its chunk gets the next available chunk. Better load balancing for unpredictable workloads.
+
+schedule(guided) - Similar to dynamic but chunk sizes decrease over time.
+
+schedule(auto) - OpenMP decides the best strategy.
+
+#pragma omp for directive automatically distributes the loop iterations among threads—it's not random.
+
+Here's what happens:
+
+OpenMP divides iterations 0-99 among threads
+With schedule(dynamic,chunk), each thread gets 10 iterations at a time
+Thread 0 might get iterations 0-9, incrementing its private i from 0 to 9
+Thread 1 might get iterations 10-19, incrementing its private i from 10 to 19
+And so on...
+So each thread's private i is systematically incremented by the omp for loop, not randomly. The for directive handles the distribution automatically—you 
+don't manually control it. This ensures each iteration (0-99) is executed exactly once across all threads.

@@ -27,3 +27,5 @@ int nthreads, tid;
 
 // gcc -fopenmp parallelRegion.c -o parallelRegion
 // ./parallelRegion
+
+

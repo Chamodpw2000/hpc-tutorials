@@ -1,0 +1,47 @@
+#include <omp.h>
+#include <stdio.h>
+int main ()  {
+
+int nthreads, tid;
+
+/* Fork a team of threads with each thread having a private tid variable */
+#pragma omp parallel private(tid)
+  {
+
+  /* Obtain and print thread id */
+  tid = omp_get_thread_num();
+  printf("Hello World from thread = %d\n", tid);
+
+  /* Only master thread does this */
+  if (tid == 0) 
+    {
+    nthreads = omp_get_num_threads();
+    printf("Number of threads = %d\n", nthreads);
+    }
+
+  }  /* All threads join master thread and terminate */
+
+
+  return 0;
+}
+
+#pragma omp parallel private(tid)
+
+The clause private(tid) in #pragma omp parallel means that each thread in the parallel region gets its own private copy of the variable tid. 
+Changes made to tid by one thread do not affect the value of tid in other threads. This is important for thread safety, ensuring that each thread 
+can store its own thread ID without interfering with others.
+
+tid = omp_get_thread_num();
+
+The function omp_get_thread_num() is an OpenMP library function that returns the unique thread ID of the calling thread within the current parallel region. 
+The ID is an integer starting from 0 (for the master thread) up to N-1, where N is the total number of threads. This allows each thread to identify itself 
+and perform thread-specific operations.
+
+In your code, the number of threads in the parallel region is determined by OpenMP’s default settings or by user configuration. By default, OpenMP uses the number
+of available CPU cores. However, you can control the number of threads by:
+
+Setting the OMP_NUM_THREADS environment variable before running the program.
+Using the num_threads clause in the pragma, e.g., #pragma omp parallel num_threads(4).
+If neither is set, OpenMP chooses a reasonable default (usually the number of processor cores). In your code, since neither is specified, 
+the number of threads is set automatically by OpenMP.
+
