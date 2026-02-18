@@ -1,0 +1,142 @@
+/******************************************************************************
+* FILE: omp_getEnvInfo.c
+* DESCRIPTION:
+*   OpenMP Example - Get Environment Information - C/C++ Version
+*   The master thread queries and prints selected environment information.
+* AUTHOR: Blaise Barney  7/06
+* LAST REVISED: 07/12/06
+******************************************************************************/
+
+#include <omp.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+int main (int argc, char *argv[]) 
+{
+int nthreads, tid, procs, maxt, inpar, dynamic, nested;
+
+/* Start parallel region */
+#pragma omp parallel private(nthreads, tid)
+  {
+
+  /* Obtain thread number */
+  tid = omp_get_thread_num();
+
+  /* Only master thread does this */
+  if (tid == 0) 
+    {
+    printf("Thread %d getting environment info...\n", tid);
+
+    /* Get environment information */
+    procs = omp_get_num_procs();
+    nthreads = omp_get_num_threads();
+    maxt = omp_get_max_threads();
+    inpar = omp_in_parallel();
+    dynamic = omp_get_dynamic();
+    nested = omp_get_nested();
+
+    /* Print environment information */
+    printf("Number of processors = %d\n", procs);
+    printf("Number of threads = %d\n", nthreads);
+    printf("Max threads = %d\n", maxt);
+    printf("In parallel? = %d\n", inpar);
+    printf("Dynamic threads enabled? = %d\n", dynamic);
+    printf("Nested parallelism supported? = %d\n", nested);
+
+    }
+
+  }  /* Done */
+
+}
+
+
+This code queries and prints OpenMP environment information. Here's what it does:
+
+Parallel Region:
+
+#pragma omp parallel private(nthreads, tid)
+
+Creates a parallel team of threads (each thread exits with its own private nthreads and tid).
+
+Information Gathering (Master Thread Only):
+Only Thread 0 (master) executes the if (tid == 0) block:
+
+procs = omp_get_num_procs();        // Number of available processors
+nthreads = omp_get_num_threads();   // Number of threads in current parallel region
+maxt = omp_get_max_threads();       // Maximum threads that can be created
+inpar = omp_in_parallel();          // Returns 1 if inside parallel region, 0 otherwise
+dynamic = omp_get_dynamic();        // Returns 1 if dynamic threading enabled
+nested = omp_get_nested();          // Returns 1 if nested parallelism allowed
+
+Output Explanation:
+
+Output	Value	Meaning
+Number of processors	8	Your machine has 8 CPU cores
+Number of threads	8	OpenMP created 8 threads for this region
+Max threads	8	Maximum threads possible (= number of cores)
+In parallel?	1	Yes, we're inside a parallel region (1 = true)
+Dynamic threads enabled?	0	No, thread count is fixed (not adjusted at runtime)
+Nested parallelism supported?	0	No, parallel regions within parallel regions not allowed
+
+1. Dynamic Threads = 0 (Disabled):
+
+OpenMP creates a fixed number of threads upfront
+Default behavior = predictable, stable performance
+If disabled, thread count doesn't change during execution
+2. Nested Parallelism = 0 (Disabled):
+
+Prevents parallel regions INSIDE parallel regions
+Without this restriction, you could create too many threads (thread explosion)
+Example: 8 threads × 8 threads = 64 threads = system overload
+How to Enable Them:
+
+Option 1: Environment Variables (Before Running Code)
+
+
+How to Enable Them:
+
+ption 1: Environment Variables (Before Running Code)
+
+# Enable dynamic threads
+export OMP_DYNAMIC=true
+
+# Enable nested parallelism
+export OMP_NESTED=true
+
+# Then run your program
+./getEnvInfo
+
+
+Option 2: In Code (At Runtime)
+
+#include <omp.h>
+
+int main()
+{
+  // Enable dynamic threading
+  omp_set_dynamic(1);
+  
+  // Enable nested parallelism
+  omp_set_nested(1);
+  
+  #pragma omp parallel
+    {
+    printf("Dynamic: %d, Nested: %d\n", 
+           omp_get_dynamic(), 
+           omp_get_nested());
+    }
+}
+
+Example of Nested Parallelism (When Enabled):
+
+#pragma omp parallel num_threads(4)
+  {
+  printf("Outer thread\n");
+  
+  #pragma omp parallel num_threads(2)  // Allowed only if nested enabled
+    {
+    printf("Inner thread\n");
+    }
+  }
+
+
