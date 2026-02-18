@@ -1,0 +1,125 @@
+/******************************************************************************
+ * FILE: omp_workshare2.c
+ * DESCRIPTION:
+ *   OpenMP Example - Sections Work-sharing - C Version
+ *   In this example, the OpenMP SECTION directive is used to assign
+ *   different array operations to each thread that executes a SECTION.
+ * AUTHOR: Blaise Barney  5/99
+ * LAST REVISED: 07/16/07
+ ******************************************************************************/
+#include <omp.h>
+#include <stdio.h>
+#include <stdlib.h>
+#define N 50
+
+int main(int argc, char *argv[])
+{
+    int i, nthreads, tid;
+    float a[N], b[N], c[N], d[N];
+
+    /* Some initializations */
+    for (i = 0; i < N; i++)
+    {
+        a[i] = i * 1.5;
+        b[i] = i + 22.35;
+        c[i] = d[i] = 0.0;
+    }
+
+#pragma omp parallel shared(a, b, c, d, nthreads) private(i, tid)
+    {
+        tid = omp_get_thread_num();
+        if (tid == 0)
+        {
+            nthreads = omp_get_num_threads();
+            printf("Number of threads = %d\n", nthreads);
+        }
+        printf("Thread %d starting...\n", tid);
+
+#pragma omp sections nowait
+        {
+#pragma omp section
+            {
+                printf("Thread %d doing section 1\n", tid);
+                for (i = 0; i < N; i++)
+                {
+                    c[i] = a[i] + b[i];
+                    printf("Thread %d: c[%d]= %f\n", tid, i, c[i]);
+                }
+            }
+
+#pragma omp section
+            {
+                printf("Thread %d doing section 2\n", tid);
+                for (i = 0; i < N; i++)
+                {
+                    d[i] = a[i] * b[i];
+                    printf("Thread %d: d[%d]= %f\n", tid, i, d[i]);
+                }
+            }
+
+        } /* end of sections */
+
+        printf("Thread %d done.\n", tid);
+
+    } /* end of parallel section */
+}
+
+
+This is an OpenMP example demonstrating sections work-sharing, which divides work into independent tasks rather than loop iterations.
+
+Setup:
+
+Creates 4 arrays (a, b, c, d) of size 50
+Initializes array values
+Parallel Region:
+
+#pragma omp parallel creates a team of threads
+shared(a,b,c,d,nthreads) — all threads can access these variables
+private(i,tid) — each thread has its own copy of loop counter and thread ID
+Work Distribution with Sections:
+
+#pragma omp sections divides the work into independent sections
+#pragma omp section marks each section
+The Two Sections:
+
+Section 1: Computes c[i] = a[i] + b[i] (vector addition) - assigned to one thread
+Section 2: Computes d[i] = a[i] * b[i] (vector multiplication) - assigned to another thread
+Key Difference from omp for:
+
+omp for divides loop iterations among threads
+omp sections divides independent tasks among threads
+Here, sections 1 and 2 can run in parallel since they don't depend on each other
+nowait Clause:
+
+nowait means threads don't wait at the end of sections; they proceed immediately instead of synchronizing
+This is useful when you have different independent computations you want to parallelize, rather than distributing a single loop.
+
+What Usually Happens (8 threads, 2 sections):
+
+OpenMP distributes the 2 sections among available threads
+Thread 0 executes Section 1
+Thread 1 executes Section 2 (in parallel with Thread 0)
+Threads 2-7 remain idle
+Could One Thread Execute Both Sequentially?
+
+Theoretically yes, if:
+
+OpenMP runtime assigns both sections to the same thread, OR
+Thread 0 finishes Section 1 before Thread 1 even starts, so Thread 0 picks up Section 2
+But this is rare because:
+
+OpenMP typically spreads work across available threads for parallelism
+It would waste the parallelism potential to have one thread do both sections while others idle
+The sections are marked as independent work, so OpenMP prefers parallel execution
+To Force One Thread to Do Both:
+Set export OMP_NUM_THREADS=1 before running—then the single thread must execute both sections sequentially.
+
+So while mathematically possible, with 8 threads and 2 sections, you'd expect the work to be parallelized across 2 threads, not assigned to 1 thread.
+
+t any given moment, only 1 thread can execute 1 section.
+
+How it Works:
+
+Each #pragma omp section block is assigned to one thread
+That thread executes the entire section alone
+Different threads can execute different sections in parallel (simultaneously)
