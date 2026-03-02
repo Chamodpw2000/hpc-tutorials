@@ -49,7 +49,7 @@ printf("   Sum = %f\n",sum);
 }
 
 
-This is an OpenMP example demonstrating reduction—a technique for safely accumulating results from parallel computations.
+This is an OpenMP example demonstrating reduction — a technique for safely accumulating results from parallel computations.
 
 What the Code Does:
 
@@ -84,3 +84,16 @@ Final: sum = sum_0 + sum_1 + sum_2 + sum_3
 Common Reduction Operators: +, -, *, & (bitwise AND), | (bitwise OR), ^ (XOR), && (logical AND), || (logical OR), min, max
 
 This is a safe and efficient way to aggregate results from parallel computations.
+
+OpenMP supports these common reduction operations:
+
++  Sum
+*  Product
+-  Difference (for sum reduction, not recommended for non-associative)
+&  Bitwise AND
+|  Bitwise OR
+^  Bitwise XOR
+&& Logical AND
+|| Logical OR
+min Minimum value (C/C++: min)
+max Maximum value (C/C++: max)
